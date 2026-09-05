@@ -1,0 +1,68 @@
+"use client";
+
+import { FormEvent, useState } from "react";
+import { useRouter } from "next/navigation";
+
+const checks = ["SEO essentials", "Broken links", "Security basics", "Social sharing", "Launch mistakes"];
+
+export default function HomePage() {
+  const router = useRouter();
+  const [url, setUrl] = useState("");
+  const [message, setMessage] = useState<string | null>(null);
+
+  function startPlaceholderScan(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!url.trim()) {
+      setMessage("Enter a public website URL to continue.");
+      return;
+    }
+    setMessage(null);
+    router.push(`/scan/phase-01-demo?url=${encodeURIComponent(url.trim())}`);
+  }
+
+  return (
+    <main className="min-h-screen overflow-hidden bg-[#07111f]">
+      <div className="mx-auto max-w-6xl px-6 py-6 sm:px-10">
+        <header className="flex items-center justify-between" aria-label="Site header">
+          <span className="text-sm font-semibold tracking-[0.18em] text-cyan-300">AI WEBSITE PREFLIGHT</span>
+          <span className="rounded-full border border-slate-700 px-3 py-1 text-xs text-slate-300">Phase 01</span>
+        </header>
+
+        <section className="grid min-h-[78vh] items-center gap-12 py-20 lg:grid-cols-[1.15fr_.85fr]">
+          <div>
+            <p className="mb-5 text-sm font-medium text-cyan-300">For AI-built websites</p>
+            <h1 className="max-w-3xl text-5xl font-semibold tracking-tight text-white sm:text-6xl">
+              Is your AI-built website actually ready to launch?
+            </h1>
+            <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-300">
+              Run a preflight check before you publish. Find the issues that can block discovery, trust, and conversion—then prepare a focused fix pack for Codex.
+            </p>
+
+            <form className="mt-9 max-w-2xl" onSubmit={startPlaceholderScan} noValidate>
+              <label className="sr-only" htmlFor="website-url">Public website URL</label>
+              <div className="flex flex-col gap-3 rounded-2xl border border-slate-700 bg-slate-900/70 p-3 shadow-2xl shadow-cyan-950/30 sm:flex-row">
+                <input id="website-url" value={url} onChange={(event) => setUrl(event.target.value)} placeholder="https://example.com" className="min-w-0 flex-1 rounded-xl border border-slate-700 bg-[#0b1627] px-4 py-3 text-white outline-none placeholder:text-slate-500 focus:border-cyan-400" inputMode="url" />
+                <button type="submit" className="rounded-xl bg-cyan-300 px-5 py-3 font-semibold text-slate-950 transition hover:bg-cyan-200 focus:outline-none focus:ring-2 focus:ring-cyan-200">Run Preflight</button>
+              </div>
+              <p className="mt-3 text-sm text-slate-400">Only public pages will be scanned. We never modify your website.</p>
+              {message ? <p className="mt-3 text-sm text-amber-300" role="alert">{message}</p> : null}
+            </form>
+
+            <ul className="mt-10 flex flex-wrap gap-2" aria-label="Planned check categories">
+              {checks.map((check) => <li key={check} className="rounded-full border border-slate-700 px-3 py-1.5 text-sm text-slate-300">{check}</li>)}
+            </ul>
+          </div>
+
+          <section className="rounded-3xl border border-slate-700 bg-gradient-to-b from-slate-900 to-[#0a1423] p-6 shadow-2xl shadow-slate-950/40" aria-label="Example result">
+            <div className="flex items-center justify-between border-b border-slate-700 pb-5">
+              <div><p className="text-xs uppercase tracking-[0.2em] text-slate-400">Example report</p><p className="mt-2 font-medium">example.com</p></div>
+              <span className="rounded-full bg-amber-400/15 px-3 py-1 text-xs font-semibold text-amber-300">NOT READY</span>
+            </div>
+            <div className="py-8"><p className="text-sm text-slate-400">Ready Score</p><p className="mt-1 text-7xl font-semibold text-white">72<span className="text-2xl text-slate-500">/100</span></p><p className="mt-4 text-slate-300">3 issues should be fixed before launch.</p></div>
+            <div className="space-y-3 border-t border-slate-700 pt-5"><p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Before launch</p><div className="rounded-xl border border-amber-400/30 bg-amber-400/5 p-4"><p className="font-medium text-amber-200">Broken internal link</p><p className="mt-1 text-sm text-slate-300">Evidence and remediation will appear here in a later phase.</p></div></div>
+          </section>
+        </section>
+      </div>
+    </main>
+  );
+}
