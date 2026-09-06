@@ -31,7 +31,7 @@ This is a pre-launch verification product, not a generic SEO dashboard.
 
 ## Repository Boundary
 
-Do not modify the existing financial project outside the `ai-website-preflight` directory.
+This repository is the independent AI Website Preflight project. Keep all changes within its approved Phase 01 scope.
 
 ## Current Scope
 
