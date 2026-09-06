@@ -31,8 +31,8 @@ This is a pre-launch verification product, not a generic SEO dashboard.
 
 ## Repository Boundary
 
-This repository is the independent AI Website Preflight project. Keep all changes within its approved Phase 02 scope.
+This repository is the independent AI Website Preflight project. Keep all changes within its approved Phase 03 scope.
 
 ## Current Scope
 
-Phase 02 only: URL validation, SSRF protection, constrained HTTP/HTTPS fetching, SQLite scan evidence, and task status. Do not implement scoring, diagnosis, recommendations, Fix Packs, or advance to Phase 03 without explicit approval.
+Phase 03 only: evidence extraction and deterministic detection findings on top of the approved Phase 02 scanner. Do not implement scoring, readiness labels, recommendations, Fix Packs, or advance to Phase 04 without explicit approval.

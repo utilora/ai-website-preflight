@@ -4,9 +4,9 @@ AI Website Preflight is a pre-launch verification product for people who build w
 
 ## Current Development Stage
 
-Phase 02 — Scan Engine and Security Boundaries
+Phase 03 — Detection Rules
 
-This repository currently provides the foundation only: a responsive product landing page, constrained public URL scan tasks, status/result routes, a health endpoint, and SQLite-backed scan evidence. It does not score, diagnose, or recommend fixes.
+This repository now provides constrained public URL scans plus deterministic, evidence-based Phase 03 findings for indexability, metadata, links, accessibility basics, security observations, and structured data. It does not calculate a score, readiness label, or recommend fixes.
 
 ## Technology Stack
 
@@ -52,7 +52,7 @@ The Phase 02 architecture intentionally avoids external queues, browser workers,
 
 ## Scope Boundary
 
-Do not add scoring, detection rules, Fix with Codex, authentication, payments, subscriptions, AI APIs, dashboards, teams, browser extensions, or automatic repository modification without explicit approval. See [AGENTS.md](AGENTS.md) and the converted requirements under `docs/`.
+Do not add scoring, readiness labels, Fix with Codex, authentication, payments, subscriptions, AI APIs, dashboards, teams, browser extensions, or automatic repository modification without explicit approval. See [AGENTS.md](AGENTS.md) and the converted requirements under `docs/`.
 
 ## Known Phase 02 Limitation
 
