@@ -84,14 +84,14 @@ export function parseRobotsDirectives(body: string) {
 }
 
 export function sitemapDocumentInfo(body: string, siteOrigin: string, maxUrls: number) {
-  const parseable = /<(?:urlset|sitemapindex)\b/i.test(body) && /<\/(?:urlset|sitemapindex)>/i.test(body); const locations = [...body.matchAll(/<loc>\s*([^<]+?)\s*<\/loc>/gi)].map((match) => match[1].trim()); let invalidUrlCount = 0;
+  const isIndex = /<sitemapindex\b/i.test(body); const parseable = /<(?:urlset|sitemapindex)\b/i.test(body) && /<\/(?:urlset|sitemapindex)>/i.test(body); const locations = [...body.matchAll(/<loc>\s*([^<]+?)\s*<\/loc>/gi)].map((match) => match[1].trim()); let invalidUrlCount = 0;
   for (const value of locations) try { new URL(value); } catch { invalidUrlCount++; }
-  return { parseable, urlCount: locations.length, invalidUrlCount, selectedUrls: parseSitemapUrls(body, siteOrigin, maxUrls) };
+  return { parseable, urlCount: locations.length, invalidUrlCount, selectedUrls: isIndex ? [] : parseSitemapUrls(body, siteOrigin, maxUrls) };
 }
 
 function evidenceForPage(requestedUrl: string, result: FetchResult, started: number): PageEvidence {
-  const finalUrl = new URL(result.finalUrl); const facts = analyzeHtml(result.body, finalUrl);
-  return { requestedUrl, finalUrl: result.finalUrl, status: result.status, redirects: result.redirects, headers: result.headers, contentType: result.headers["content-type"], title: facts.title, internalLinks: extractInternalLinks(result.body, finalUrl), facts, durationMs: Date.now() - started };
+  const finalUrl = new URL(result.finalUrl); const contentType = result.headers["content-type"] ?? ""; const isHtml = !contentType || /(?:text\/html|application\/xhtml\+xml)/i.test(contentType); const facts = isHtml ? analyzeHtml(result.body, finalUrl) : undefined;
+  return { requestedUrl, finalUrl: result.finalUrl, status: result.status, redirects: result.redirects, headers: result.headers, contentType: contentType || undefined, title: facts?.title, internalLinks: isHtml ? extractInternalLinks(result.body, finalUrl) : [], facts, durationMs: Date.now() - started };
 }
 
 export async function collectScan(scan: ScanEvidence, fetcher: Fetcher = fetchPublic, activeLimits: ScanLimits = limits) {
