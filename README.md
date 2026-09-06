@@ -13,7 +13,7 @@ This repository currently provides the foundation only: a responsive product lan
 - Next.js 15
 - TypeScript
 - Tailwind CSS
-- Lightweight Node.js runtime with no background workers in Phase 01
+- Lightweight Node.js runtime with a process-local Phase 02 worker
 
 ## Local Development
 
@@ -48,8 +48,12 @@ npm run build
 3. Start the single application process with `npm run start`.
 4. Configure a reverse proxy and health check against `/api/health`.
 
-The Phase 01 architecture intentionally avoids queues, browser workers, and additional services so it remains suitable for a roughly 1 GB RAM server.
+The Phase 02 architecture intentionally avoids external queues, browser workers, and additional services so it remains suitable for a roughly 1 GB RAM server.
 
 ## Scope Boundary
 
-Do not add URL scanning, authentication, payments, subscriptions, AI APIs, dashboards, teams, browser extensions, or automatic repository modification without explicit approval. See [AGENTS.md](AGENTS.md) and the converted requirements under `docs/`.
+Do not add scoring, detection rules, Fix with Codex, authentication, payments, subscriptions, AI APIs, dashboards, teams, browser extensions, or automatic repository modification without explicit approval. See [AGENTS.md](AGENTS.md) and the converted requirements under `docs/`.
+
+## Known Phase 02 Limitation
+
+Scan tasks use a process-local worker. If the application process restarts, tasks left in `queued` or `running` state are not automatically resumed. Phase 02 intentionally does not introduce Redis or a complex queue; recovery is deferred to a separately approved future change.
