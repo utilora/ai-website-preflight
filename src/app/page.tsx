@@ -17,7 +17,7 @@ export default function HomePage() {
       return;
     }
     setMessage(null);
-    router.push(`/scan/phase-01-demo?url=${encodeURIComponent(url.trim())}`);
+    void fetch("/api/scans", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ url: url.trim() }) }).then(async (response) => { const payload = await response.json() as { id?: string; error?: string }; if (!response.ok || !payload.id) { setMessage(payload.error ?? "Unable to start scan."); return; } router.push(`/scan/${payload.id}`); }).catch(() => setMessage("Unable to start scan."));
   }
 
   return (
@@ -25,7 +25,7 @@ export default function HomePage() {
       <div className="mx-auto max-w-6xl px-6 py-6 sm:px-10">
         <header className="flex items-center justify-between" aria-label="Site header">
           <span className="text-sm font-semibold tracking-[0.18em] text-cyan-300">AI WEBSITE PREFLIGHT</span>
-          <span className="rounded-full border border-slate-700 px-3 py-1 text-xs text-slate-300">Phase 01</span>
+          <span className="rounded-full border border-slate-700 px-3 py-1 text-xs text-slate-300">Phase 02</span>
         </header>
 
         <section className="grid min-h-[78vh] items-center gap-12 py-20 lg:grid-cols-[1.15fr_.85fr]">
@@ -59,7 +59,7 @@ export default function HomePage() {
               <span className="rounded-full bg-amber-400/15 px-3 py-1 text-xs font-semibold text-amber-300">NOT READY</span>
             </div>
             <div className="py-8"><p className="text-sm text-slate-400">Ready Score</p><p className="mt-1 text-7xl font-semibold text-white">72<span className="text-2xl text-slate-500">/100</span></p><p className="mt-4 text-slate-300">3 issues should be fixed before launch.</p></div>
-            <div className="space-y-3 border-t border-slate-700 pt-5"><p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Before launch</p><div className="rounded-xl border border-amber-400/30 bg-amber-400/5 p-4"><p className="font-medium text-amber-200">Broken internal link</p><p className="mt-1 text-sm text-slate-300">Evidence and remediation will appear here in a later phase.</p></div></div>
+            <div className="space-y-3 border-t border-slate-700 pt-5"><p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Before launch</p><div className="rounded-xl border border-amber-400/30 bg-amber-400/5 p-4"><p className="font-medium text-amber-200">Broken internal link</p><p className="mt-1 text-sm text-slate-300">Evidence will be collected during a safe, limited scan.</p></div></div>
           </section>
         </section>
       </div>

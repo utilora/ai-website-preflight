@@ -4,9 +4,9 @@ AI Website Preflight is a pre-launch verification product for people who build w
 
 ## Current Development Stage
 
-Phase 01 — Project Initialization
+Phase 02 — Scan Engine and Security Boundaries
 
-This repository currently provides the foundation only: a responsive product landing page, placeholder scan and tool routes, health endpoint, logging/error boundaries, and a minimal SQLite data-access contract. It does not fetch or scan URLs.
+This repository currently provides the foundation only: a responsive product landing page, constrained public URL scan tasks, status/result routes, a health endpoint, and SQLite-backed scan evidence. It does not score, diagnose, or recommend fixes.
 
 ## Technology Stack
 
