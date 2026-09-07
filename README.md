@@ -1,14 +1,14 @@
 # AI Website Preflight
 
-AI Website Preflight is a pre-launch verification product for people who build websites with Codex, Cursor, Lovable, Replit, Bolt, and related AI tools. It helps users turn reproducible website checks into a clear launch-readiness report.
+AI Website Preflight is a pre-launch verification product for people who build websites with Codex, Cursor, Lovable, Replit, Bolt, and related AI tools. It helps users turn reproducible website checks into a clear launch-readiness report and an actionable coding-agent task list.
 
 ## Current Development Stage
 
-Phase 04 — Ready Score and Results
+Phase 05 — Fix with Codex
 
-This repository provides constrained public URL scans, deterministic Phase 03 findings, and a backend-calculated Ready Score with READY TO LAUNCH, ALMOST READY, or NOT READY status. The private result page groups evidence into Must Fix, Warnings, and Info and can start a new scan without overwriting the old report.
+This repository provides constrained public URL scans, deterministic findings, a backend-calculated Ready Score, and an evidence-based Fix Pack that users can copy or download for a coding agent. Scan Again creates a new report without overwriting the old result.
 
-Fix with Codex, PRELAUNCH_FIX.md, AI-generated repair guidance, automatic code changes, authentication, payments, and dashboards are not implemented.
+The Fix Pack is generated from stable templates and the server's stored findings. It does not call an AI API and does not inspect, clone, or modify the user's repository.
 
 ## Technology Stack
 
@@ -33,6 +33,12 @@ Scores start at 100 and use fixed deductions: critical 15, high 8, medium 4, low
 - NOT READY: any critical finding or score below 75
 
 Ready Score summarizes automated checks from the sampled pages; it is not a complete security, compliance, or website-quality assessment.
+
+## Fix Pack
+
+Completed reports can generate UTF-8 `PRELAUNCH_FIX.md` content. Repeated findings are grouped by rule, evidence and affected URLs are sanitized and bounded, and every repair task includes a goal, framework-neutral guidance, and acceptance criteria. Informational observations do not become automatic repair tasks.
+
+The Fix Pack is deterministic and does not modify the user's repository. Users should review the tasks, let their coding agent inspect the real framework and source structure, deploy through their normal process, and then run Scan Again.
 
 ## Environment Variables
 
@@ -65,7 +71,7 @@ The Phase 02 architecture intentionally avoids external queues, browser workers,
 
 ## Scope Boundary
 
-Phase 04 includes deterministic scoring, readiness labels, result grouping, report states, and rescan. Do not add Fix with Codex, Fix Packs, authentication, payments, subscriptions, AI APIs, dashboards, teams, browser extensions, or automatic repository modification without explicit approval. See [AGENTS.md](AGENTS.md) and the converted requirements under `docs/`.
+Phase 05 includes deterministic Fix Pack generation, safe copy/download, anonymous copy-event recording, and rescan. Do not add AI APIs, GitHub access, automatic repository modification, pull requests, deployment, authentication, payments, subscriptions, dashboards, teams, browser extensions, or Phase 06+ features without explicit approval. See [AGENTS.md](AGENTS.md) and the converted requirements under `docs/`.
 
 ## Known Phase 02 Limitation
 
