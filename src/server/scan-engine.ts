@@ -6,6 +6,7 @@ import https from "node:https";
 import { BlockList, isIP } from "node:net";
 import { dirname } from "node:path";
 import { DatabaseSync } from "node:sqlite";
+import { sanitizeResponseHeaders } from "./headers";
 import { analyzeHtml } from "./html-evidence";
 import { runRules, type Finding, type PageFacts } from "./rules";
 import { calculateScore, groupFindings, type ResultGroups, type ScoreBreakdown } from "./scoring";
@@ -28,7 +29,55 @@ const blocked = new BlockList();
 for (const [network, prefix] of [["0.0.0.0",8],["10.0.0.0",8],["100.64.0.0",10],["127.0.0.0",8],["169.254.0.0",16],["172.16.0.0",12],["192.0.0.0",24],["192.0.2.0",24],["192.168.0.0",16],["198.18.0.0",15],["198.51.100.0",24],["203.0.113.0",24],["224.0.0.0",4],["240.0.0.0",4]] as const) blocked.addSubnet(network, prefix, "ipv4");
 for (const [network, prefix] of [["::",128],["::1",128],["fc00::",7],["fe80::",10],["ff00::",8],["2001:db8::",32]] as const) blocked.addSubnet(network, prefix, "ipv6");
 function dnsName(hostname: string) { return hostname.replace(/^\[|\]$/g, "").replace(/\.$/, "").toLowerCase(); }
-export function isForbiddenIp(value: string): boolean { const address = dnsName(value); const family = isIP(address); return family === 4 ? blocked.check(address, "ipv4") : family === 6 ? blocked.check(address, "ipv6") : true; }
+function ipv4From32(value: number) { const bits = value >>> 0; return `${(bits >>> 24) & 255}.${(bits >>> 16) & 255}.${(bits >>> 8) & 255}.${bits & 255}`; }
+function expandIpv6(address: string): number[] | null {
+  let hex = dnsName(address);
+  const dotted = hex.match(/^(.*:)(\d{1,3}(?:\.\d{1,3}){3})$/);
+  if (dotted) {
+    const octets = dotted[2].split(".").map(Number);
+    if (octets.length !== 4 || octets.some((part) => part > 255)) return null;
+    hex = `${dotted[1]}${((octets[0] << 8) | octets[1]).toString(16)}:${((octets[2] << 8) | octets[3]).toString(16)}`;
+  }
+  if (!hex.includes(":")) return null;
+  const pieces = hex.split("::");
+  if (pieces.length > 2) return null;
+  const left = pieces[0] ? pieces[0].split(":") : [];
+  const right = pieces.length === 2 ? (pieces[1] ? pieces[1].split(":") : []) : [];
+  const missing = 8 - left.length - right.length;
+  if (pieces.length === 1 && missing !== 0) return null;
+  if (pieces.length === 2 && missing < 0) return null;
+  const groups = [...left, ...Array(Math.max(0, missing)).fill("0"), ...right];
+  if (groups.length !== 8 || groups.some((group) => !/^[0-9a-f]{1,4}$/i.test(group))) return null;
+  return groups.map((group) => Number.parseInt(group, 16));
+}
+
+export function embeddedIpv4Addresses(value: string): string[] {
+  const address = dnsName(value);
+  if (isIP(address) === 4) return [address];
+  const groups = expandIpv6(address);
+  if (!groups) return [];
+  const found: string[] = [];
+  const last32 = (groups[6] << 16) | groups[7];
+  const mapped = groups[0] === 0 && groups[1] === 0 && groups[2] === 0 && groups[3] === 0 && groups[4] === 0 && groups[5] === 0xffff;
+  const compatible = groups[0] === 0 && groups[1] === 0 && groups[2] === 0 && groups[3] === 0 && groups[4] === 0 && groups[5] === 0;
+  const nat64 = groups[0] === 0x64 && groups[1] === 0xff9b && groups[2] === 0 && groups[3] === 0 && groups[4] === 0 && groups[5] === 0;
+  if (mapped || nat64) found.push(ipv4From32(last32));
+  if (compatible && last32 !== 0 && last32 !== 1) found.push(ipv4From32(last32));
+  if (groups[0] === 0x2002) found.push(ipv4From32((groups[1] << 16) | groups[2]));
+  if (groups[0] === 0x2001 && groups[1] === 0) {
+    found.push(ipv4From32((groups[2] << 16) | groups[3]));
+    found.push(ipv4From32((((groups[6] << 16) | groups[7]) ^ 0xffffffff) >>> 0));
+  }
+  return [...new Set(found)];
+}
+
+export function isForbiddenIp(value: string): boolean {
+  const address = dnsName(value);
+  const family = isIP(address);
+  if (family === 4) return blocked.check(address, "ipv4");
+  if (family === 6) return blocked.check(address, "ipv6") || embeddedIpv4Addresses(address).some((ipv4) => blocked.check(ipv4, "ipv4"));
+  return true;
+}
 const systemResolver: Resolver = async (hostname) => lookup(hostname, { all: true, verbatim: true });
 
 export async function normalizePublicUrl(raw: string, resolver: Resolver = systemResolver): Promise<URL> {
@@ -92,7 +141,7 @@ export function sitemapDocumentInfo(body: string, siteOrigin: string, maxUrls: n
 
 function evidenceForPage(requestedUrl: string, result: FetchResult, started: number): PageEvidence {
   const finalUrl = new URL(result.finalUrl); const contentType = result.headers["content-type"] ?? ""; const isHtml = !contentType || /(?:text\/html|application\/xhtml\+xml)/i.test(contentType); const facts = isHtml ? analyzeHtml(result.body, finalUrl) : undefined;
-  return { requestedUrl, finalUrl: result.finalUrl, status: result.status, redirects: result.redirects, headers: result.headers, contentType: contentType || undefined, title: facts?.title, internalLinks: isHtml ? extractInternalLinks(result.body, finalUrl) : [], facts, durationMs: Date.now() - started };
+  return { requestedUrl, finalUrl: result.finalUrl, status: result.status, redirects: result.redirects, headers: sanitizeResponseHeaders(result.headers), contentType: contentType || undefined, title: facts?.title, internalLinks: isHtml ? extractInternalLinks(result.body, finalUrl) : [], facts, durationMs: Date.now() - started };
 }
 
 export async function collectScan(scan: ScanEvidence, fetcher: Fetcher = fetchPublic, activeLimits: ScanLimits = limits) {
@@ -111,9 +160,19 @@ export async function collectScan(scan: ScanEvidence, fetcher: Fetcher = fetchPu
   scan.findings = runRules(scan); return scan;
 }
 
+function persistableScan(scan: ScanEvidence): ScanEvidence {
+  return { ...scan, pages: scan.pages.map((page) => ({ ...page, headers: sanitizeResponseHeaders(page.headers) })) };
+}
+
 const dbPath = process.env.DATABASE_PATH ?? "./data/preflight.db"; mkdirSync(dirname(dbPath), { recursive: true }); const db = new DatabaseSync(dbPath); db.exec("CREATE TABLE IF NOT EXISTS scans (id TEXT PRIMARY KEY, payload TEXT NOT NULL)");
-export function saveScan(scan: ScanEvidence) { db.prepare("INSERT OR REPLACE INTO scans (id, payload) VALUES (?, ?)").run(scan.id, JSON.stringify(scan)); }
-export function getScan(id: string): ScanEvidence | null { const row = db.prepare("SELECT payload FROM scans WHERE id = ?").get(id) as { payload?: string } | undefined; return row?.payload ? JSON.parse(row.payload) as ScanEvidence : null; }
+export function saveScan(scan: ScanEvidence) { db.prepare("INSERT OR REPLACE INTO scans (id, payload) VALUES (?, ?)").run(scan.id, JSON.stringify(persistableScan(scan))); }
+export function getScan(id: string): ScanEvidence | null {
+  const row = db.prepare("SELECT payload FROM scans WHERE id = ?").get(id) as { payload?: string } | undefined;
+  if (!row?.payload) return null;
+  const scan = JSON.parse(row.payload) as ScanEvidence;
+  scan.pages = (scan.pages ?? []).map((page) => ({ ...page, headers: sanitizeResponseHeaders(page.headers) }));
+  return scan;
+}
 export function createQueuedScan(submittedUrl: string, normalizedUrl: string, id: string = randomUUID(), createdAt = new Date().toISOString()): ScanEvidence {
   return { id, submittedUrl, normalizedUrl, status: "queued", createdAt, pages: [], warnings: [] };
 }
@@ -123,5 +182,65 @@ export function completeScan(scan: ScanEvidence, completedAt = new Date().toISOS
 export function failScan(scan: ScanEvidence, error: unknown, completedAt = new Date().toISOString()) {
   scan.status = "failed"; scan.completedAt = completedAt; scan.errorSummary = error instanceof Error ? error.message : "Scan failed"; scan.findings = runRules(scan); delete scan.score; delete scan.resultGroups; return scan;
 }
-export async function runScan(id: string) { const scan = getScan(id); if (!scan) return; scan.status = "running"; scan.startedAt = new Date().toISOString(); saveScan(scan); try { await collectScan(scan); completeScan(scan); } catch (error) { failScan(scan, error); } saveScan(scan); }
-export async function createScan(submittedUrl: string) { const normalized = await normalizePublicUrl(submittedUrl); const scan = createQueuedScan(submittedUrl, normalized.toString()); saveScan(scan); void runScan(scan.id); return scan; }
+
+type ScanRunner = (id: string) => Promise<void>;
+const scanRuntime = { maxActiveOverride: 0, active: 0, queue: [] as string[], runner: undefined as ScanRunner | undefined };
+
+export function maxActiveScans() {
+  if (scanRuntime.maxActiveOverride > 0) return scanRuntime.maxActiveOverride;
+  const value = Number(process.env.MAX_ACTIVE_SCANS ?? 1);
+  if (!Number.isFinite(value) || value < 1) return 1;
+  return Math.min(Math.floor(value), 4);
+}
+
+export function configureScanRuntime(options: { maxActiveScans?: number; runner?: ScanRunner } = {}) {
+  if (options.maxActiveScans !== undefined) scanRuntime.maxActiveOverride = options.maxActiveScans;
+  if (options.runner) scanRuntime.runner = options.runner;
+}
+
+export function resetScanRuntime() {
+  scanRuntime.maxActiveOverride = 0;
+  scanRuntime.active = 0;
+  scanRuntime.queue = [];
+  scanRuntime.runner = undefined;
+}
+
+export function getScanRuntimeSnapshot() {
+  return { active: scanRuntime.active, queued: scanRuntime.queue.length, maxActive: maxActiveScans() };
+}
+
+function pumpScanQueue() {
+  while (scanRuntime.active < maxActiveScans() && scanRuntime.queue.length) {
+    const id = scanRuntime.queue.shift()!;
+    scanRuntime.active += 1;
+    const runner = scanRuntime.runner ?? runScan;
+    void Promise.resolve()
+      .then(() => runner(id))
+      .catch(() => undefined)
+      .finally(() => {
+        scanRuntime.active = Math.max(0, scanRuntime.active - 1);
+        pumpScanQueue();
+      });
+  }
+}
+
+export function enqueueScan(id: string) {
+  scanRuntime.queue.push(id);
+  pumpScanQueue();
+}
+
+export async function runScan(id: string) {
+  const scan = getScan(id);
+  if (!scan || scan.status !== "queued") return;
+  scan.status = "running"; scan.startedAt = new Date().toISOString(); saveScan(scan);
+  try { await collectScan(scan); completeScan(scan); } catch (error) { failScan(scan, error); }
+  saveScan(scan);
+}
+
+export async function createScan(submittedUrl: string) {
+  const normalized = await normalizePublicUrl(submittedUrl);
+  const scan = createQueuedScan(submittedUrl, normalized.toString());
+  saveScan(scan);
+  enqueueScan(scan.id);
+  return scan;
+}

@@ -29,11 +29,12 @@ This is a pre-launch verification product, not a generic SEO dashboard.
 - Every finding, score deduction, and Fix Pack task must have reproducible evidence.
 - Do not claim complete security auditing or legal compliance certification.
 - Detection, scoring, and Fix Pack templates must have automated tests.
+- Scan execution uses a process-local queue with a conservative active-scan cap. Process restart does not recover queued or running scans.
 
 ## Repository Boundary
 
-This repository is the independent AI Website Preflight project. Keep all changes within its approved Phase 05 scope.
+This repository is the independent AI Website Preflight project. Keep all changes within its approved Phase 05.5 scope.
 
 ## Current Scope
 
-Phase 05 only: deterministic, evidence-based Fix Pack Markdown generation, safe copy/download, and Scan Again on top of approved scans, findings, and Ready Scores. Do not call an AI API, inspect or modify user repositories, open pull requests, deploy code, add authentication or payment, create dashboards, or implement any Phase 06+ functionality without explicit approval.
+Phase 05.5 only: public-launch hardening on top of approved scans, findings, Ready Scores, and Fix Packs. Upgrade patched Next.js, cap process-local scan concurrency, rate-limit public scan creation, tighten IPv6 SSRF embeddings, and minimize stored/returned scan headers. Do not call an AI API, inspect or modify user repositories, open pull requests, deploy code, add authentication or payment, create dashboards, implement SEO tool pages, or start Phase 06 without explicit approval.

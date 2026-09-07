@@ -4,7 +4,7 @@ AI Website Preflight is a pre-launch verification product for people who build w
 
 ## Current Development Stage
 
-Phase 05 — Fix with Codex
+Phase 05.5 — Public Launch Hardening
 
 This repository provides constrained public URL scans, deterministic findings, a backend-calculated Ready Score, and an evidence-based Fix Pack that users can copy or download for a coding agent. Scan Again creates a new report without overwriting the old result.
 
@@ -15,7 +15,7 @@ The Fix Pack is generated from stable templates and the server's stored findings
 - Next.js 15
 - TypeScript
 - Tailwind CSS
-- Lightweight Node.js runtime with a process-local Phase 02 worker
+- Lightweight Node.js runtime with a process-local scan queue
 
 ## Local Development
 
@@ -47,6 +47,12 @@ The Fix Pack is deterministic and does not modify the user's repository. Users s
 | `NEXT_PUBLIC_APP_URL` | Public application URL | `http://localhost:3000` |
 | `DATABASE_PATH` | SQLite scan database path | `./data/preflight.db` |
 | `LOG_LEVEL` | Minimum structured log level | `info` |
+| `MAX_ACTIVE_SCANS` | Process-local concurrent scans | `1` (hard cap 4) |
+| `SCAN_RATE_LIMIT_IP_MAX` | Scan creates allowed per IP window | `5` |
+| `SCAN_RATE_LIMIT_HOST_MAX` | Scan creates allowed per target host window | `3` |
+| `SCAN_RATE_LIMIT_IP_WINDOW_MS` | IP window length | `600000` |
+| `SCAN_RATE_LIMIT_HOST_WINDOW_MS` | Host window length | `600000` |
+| `SCAN_RATE_LIMIT_MAX_KEYS` | Maximum in-memory rate-limit keys | `2048` |
 
 ## Validation
 
@@ -67,12 +73,12 @@ npm run build
 3. Start the single application process with `npm run start`.
 4. Configure a reverse proxy and health check against `/api/health`.
 
-The Phase 02 architecture intentionally avoids external queues, browser workers, and additional services so it remains suitable for a roughly 1 GB RAM server.
+The Phase 05.5 architecture intentionally avoids external queues, browser workers, and additional services so it remains suitable for a roughly 1 GB RAM server.
 
 ## Scope Boundary
 
-Phase 05 includes deterministic Fix Pack generation, safe copy/download, anonymous copy-event recording, and rescan. Do not add AI APIs, GitHub access, automatic repository modification, pull requests, deployment, authentication, payments, subscriptions, dashboards, teams, browser extensions, or Phase 06+ features without explicit approval. See [AGENTS.md](AGENTS.md) and the converted requirements under `docs/`.
+Phase 05.5 includes public-launch hardening: patched Next.js, a process-local scan queue, IP/host rate limits, tighter IPv6 SSRF checks, and minimized scan headers. Do not add AI APIs, GitHub access, automatic repository modification, pull requests, deployment, authentication, payments, subscriptions, dashboards, teams, browser extensions, SEO tool pages, or Phase 06+ features without explicit approval. See [AGENTS.md](AGENTS.md) and the converted requirements under `docs/`.
 
-## Known Phase 02 Limitation
+## Known Limitations
 
-Scan tasks use a process-local worker. If the application process restarts, tasks left in `queued` or `running` state are not automatically resumed. Phase 02 intentionally does not introduce Redis or a complex queue; recovery is deferred to a separately approved future change.
+Scan tasks use a process-local queue. If the application process restarts, tasks left in `queued` or `running` state are not automatically resumed. Phase 05.5 does not introduce Redis or a durable queue; recovery is deferred to a separately approved future change.
