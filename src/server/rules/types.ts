@@ -23,7 +23,10 @@ export type PageFacts = {
   placeholderContent: string[];
   faviconUrl?: string;
   viewportPresent: boolean;
-  openGraph: { title?: string; description?: string; image?: string; imageValid: boolean };
+  viewport?: string;
+  robotsMeta?: string;
+  openGraph: { title?: string; description?: string; image?: string; imageValid: boolean; url?: string; type?: string };
+  twitter: { card?: string; title?: string; description?: string; image?: string };
   imagesWithoutAlt: string[];
   unlabeledControls: string[];
   headingLevels: number[];

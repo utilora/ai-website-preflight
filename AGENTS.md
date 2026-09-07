@@ -34,8 +34,8 @@ This is a pre-launch verification product, not a generic SEO dashboard.
 
 ## Repository Boundary
 
-This repository is the independent AI Website Preflight project. Keep all changes within its approved Phase 05.5 scope.
+This repository is the independent AI Website Preflight project. Keep all changes within its approved Phase 06 scope.
 
 ## Current Scope
 
-Phase 05.5 only: public-launch hardening on top of approved scans, findings, Ready Scores, and Fix Packs. Upgrade patched Next.js, cap process-local scan concurrency, rate-limit public scan creation, tighten IPv6 SSRF embeddings, and minimize stored/returned scan headers. Do not call an AI API, inspect or modify user repositories, open pull requests, deploy code, add authentication or payment, create dashboards, implement SEO tool pages, or start Phase 06 without explicit approval.
+Phase 06 only: seven indexable free-tool pages plus a /tools hub on top of approved Preflight, scoring, Fix Pack, and launch-hardening. Reuse existing safe fetch, SSRF, rate-limit identity, and detection parsers. Do not call an AI API, inspect or modify user repositories, open pull requests, deploy code, add authentication or payment, create dashboards, or start Phase 07 without explicit approval.

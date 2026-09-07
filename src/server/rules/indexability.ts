@@ -1,14 +1,7 @@
-import type { RobotsDirective, ScanEvidence } from "../scan-engine";
+import type { ScanEvidence } from "../scan-engine";
+import { AI_CRAWLERS, explicitCrawlerStatus } from "./ai-crawlers";
 import { finding } from "./helpers";
 import type { Finding } from "./types";
-
-const aiBots = ["GPTBot", "ClaudeBot", "Google-Extended", "PerplexityBot"];
-
-function statusForBot(directives: RobotsDirective[], bot: string) {
-  const relevant = directives.filter((item) => item.userAgents.some((agent) => agent.toLowerCase() === bot.toLowerCase()));
-  if (!relevant.length) return "not explicitly mentioned";
-  return relevant.some((item) => item.disallow.includes("/")) ? "blocked" : "allowed";
-}
 
 export function indexabilityRules(scan: ScanEvidence): Finding[] {
   const findings: Finding[] = []; const home = scan.pages[0]; const homeUrl = home?.finalUrl ?? scan.normalizedUrl; const robots = scan.robots; if (!home || home.error || !home.status || home.status >= 400) return findings;
@@ -25,7 +18,7 @@ export function indexabilityRules(scan: ScanEvidence): Finding[] {
     if (page.facts?.noindexMeta) findings.push(finding("indexability.meta-noindex", "critical", "Page has a noindex meta directive", "A robots meta tag explicitly contains noindex.", "Observed `<meta name=\"robots\" content=\"noindex\">` directive.", url));
     if (/\bnoindex\b/i.test(page.headers?.["x-robots-tag"] ?? "")) findings.push(finding("indexability.header-noindex", "critical", "Page has an X-Robots-Tag noindex directive", "The HTTP response explicitly contains noindex.", `X-Robots-Tag: ${page.headers?.["x-robots-tag"]}`, url));
   }
-  const statuses = Object.fromEntries(aiBots.map((bot) => [bot, statusForBot(robotDirectives, bot)]));
+  const statuses = Object.fromEntries(AI_CRAWLERS.map((bot) => [bot, explicitCrawlerStatus(robotDirectives, bot)]));
   findings.push(finding("robots.ai-crawler-access", "info", "AI crawler access declarations", "robots.txt declarations for common AI crawlers are reported as facts only.", Object.entries(statuses).map(([bot, status]) => `${bot}: ${status}`).join("; "), homeUrl, { statuses }));
   return findings;
 }

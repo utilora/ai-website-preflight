@@ -4,9 +4,9 @@ AI Website Preflight is a pre-launch verification product for people who build w
 
 ## Current Development Stage
 
-Phase 05.5 — Public Launch Hardening
+Phase 06 — SEO Acquisition Tools
 
-This repository provides constrained public URL scans, deterministic findings, a backend-calculated Ready Score, and an evidence-based Fix Pack that users can copy or download for a coding agent. Scan Again creates a new report without overwriting the old result.
+This repository provides constrained public URL scans, deterministic findings, a backend-calculated Ready Score, an evidence-based Fix Pack, and seven free focused website checks. Scan Again creates a new report without overwriting the old result.
 
 The Fix Pack is generated from stable templates and the server's stored findings. It does not call an AI API and does not inspect, clone, or modify the user's repository.
 
@@ -40,6 +40,10 @@ Completed reports can generate UTF-8 `PRELAUNCH_FIX.md` content. Repeated findin
 
 The Fix Pack is deterministic and does not modify the user's repository. Users should review the tasks, let their coding agent inspect the real framework and source structure, deploy through their normal process, and then run Scan Again.
 
+## Free Tools
+
+`/tools` hosts seven focused checkers: sitemap, robots.txt, meta tags, Open Graph, security headers, broken internal links, and AI crawler rules. Each page is indexable, answers one question, and links to Full Website Preflight. Results are shown on the current page and are not stored as public URLs.
+
 ## Environment Variables
 
 | Variable | Purpose | Default |
@@ -54,6 +58,9 @@ The Fix Pack is deterministic and does not modify the user's repository. Users s
 | `SCAN_RATE_LIMIT_HOST_WINDOW_MS` | Host window length | `600000` |
 | `SCAN_RATE_LIMIT_MAX_KEYS` | Maximum in-memory rate-limit keys | `2048` |
 | `TRUST_PROXY_HEADERS` | Trust reverse-proxy IP headers | `false` |
+| `MAX_ACTIVE_TOOL_RUNS` | Concurrent free-tool checks | `2` (hard cap 4) |
+| `TOOL_RATE_LIMIT_IP_MAX` | Tool runs allowed per IP window | `20` |
+| `TOOL_RATE_LIMIT_HOST_MAX` | Tool runs allowed per target host window | `8` |
 
 ## Validation
 
@@ -95,7 +102,7 @@ The Phase 05.5 architecture intentionally avoids external queues, browser worker
 
 ## Scope Boundary
 
-Phase 05.5 includes public-launch hardening: patched Next.js, a process-local scan queue, IP/host rate limits, tighter IPv6 SSRF checks, and minimized scan headers. Do not add AI APIs, GitHub access, automatic repository modification, pull requests, deployment, authentication, payments, subscriptions, dashboards, teams, browser extensions, SEO tool pages, or Phase 06+ features without explicit approval. See [AGENTS.md](AGENTS.md) and the converted requirements under `docs/`.
+Phase 06 adds seven free SEO acquisition tools on top of Full Preflight, Ready Score, and Fix Pack. Tool checks reuse the existing safe fetch and do not persist public result URLs. Do not add AI APIs, GitHub access, automatic repository modification, pull requests, deployment, authentication, payments, subscriptions, dashboards, teams, or browser extensions without explicit approval. See [AGENTS.md](AGENTS.md) and the converted requirements under `docs/`.
 
 ## Known Limitations
 

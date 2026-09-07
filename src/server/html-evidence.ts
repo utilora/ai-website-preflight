@@ -32,7 +32,9 @@ export function analyzeHtml(html: string, base: URL): PageFacts {
   ].filter(Boolean);
   const faviconTag = links.find((item) => item.rel?.toLowerCase().split(/\s+/).some((value) => value === "icon" || value === "shortcut"));
   const property = (name: string) => meta.find((item) => item.property?.toLowerCase() === name)?.content?.trim() || undefined;
+  const named = (name: string) => meta.find((item) => item.name?.toLowerCase() === name)?.content?.trim() || undefined;
   const ogImageRaw = property("og:image");
+  const twitterImageRaw = named("twitter:image") ?? property("twitter:image");
   const imagesWithoutAlt = tags(html, "img").map(attributes).filter((item) => !("alt" in item)).slice(0, 5).map((item) => item.src || "<img without src>");
   const labelFors = new Set([...html.matchAll(/<label\b[^>]*>/gi)].map((match) => attributes(match[0]).for).filter(Boolean));
   const controls = [...tags(html, "input"), ...tags(html, "textarea"), ...tags(html, "select")].map(attributes).filter((item) => item.type?.toLowerCase() !== "hidden");
@@ -60,7 +62,9 @@ export function analyzeHtml(html: string, base: URL): PageFacts {
     canonical, canonicalPresent: Boolean(canonicalTag), canonicalValid: !canonicalTag || Boolean(canonical), h1,
     noindexMeta: robots.some((value) => /(?:^|,)\s*noindex\b/.test(value)), placeholderLinks, placeholderContent,
     faviconUrl: absolute(faviconTag?.href, base), viewportPresent: meta.some((item) => item.name?.toLowerCase() === "viewport"),
-    openGraph: { title: property("og:title"), description: property("og:description"), image: absolute(ogImageRaw, base), imageValid: !ogImageRaw || Boolean(absolute(ogImageRaw, base)) },
+    viewport: named("viewport"), robotsMeta: named("robots"),
+    openGraph: { title: property("og:title"), description: property("og:description"), image: absolute(ogImageRaw, base), imageValid: !ogImageRaw || Boolean(absolute(ogImageRaw, base)), url: absolute(property("og:url"), base), type: property("og:type") },
+    twitter: { card: named("twitter:card") ?? property("twitter:card"), title: named("twitter:title") ?? property("twitter:title"), description: named("twitter:description") ?? property("twitter:description"), image: absolute(twitterImageRaw, base) },
     imagesWithoutAlt, unlabeledControls, headingLevels, mixedContent, secretPatterns,
     jsonLd: { count: jsonLdBlocks.length, invalidCount }, policyLinks,
   };

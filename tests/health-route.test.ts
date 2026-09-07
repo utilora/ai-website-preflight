@@ -8,5 +8,5 @@ test("health endpoint reports the current service stage", async () => {
   assert.equal(response.status, 200);
   const payload = await response.json();
   assert.deepEqual(payload, { status: "ok", service: "ai-website-preflight", phase: APP_PHASE, stage: APP_STAGE });
-  assert.equal(payload.phase, "05.5");
+  assert.equal(payload.phase, "06");
 });

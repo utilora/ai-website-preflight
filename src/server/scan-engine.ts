@@ -122,6 +122,10 @@ export const fetchPublic = createSafeFetcher();
 export function extractInternalLinks(html: string, base: URL) { const found = new Set<string>(); for (const match of html.matchAll(/href\s*=\s*["']([^"'#\s]+)["']/gi)) { try { const url = new URL(match[1], base); url.hash = ""; if (url.origin === base.origin && (url.protocol === "http:" || url.protocol === "https:")) found.add(url.toString()); } catch {} } return [...found]; }
 export function parseSitemapUrls(xml: string, siteOrigin: string, maxUrls: number) { const found = new Set<string>(); for (const match of xml.matchAll(/<loc>\s*([^<\s]+)\s*<\/loc>/gi)) { try { const url = new URL(match[1]); url.hash = ""; if (url.origin === siteOrigin) found.add(url.toString()); if (found.size >= maxUrls) break; } catch {} } return [...found]; }
 
+export function parseRobotsSitemaps(body: string) {
+  return [...body.matchAll(/^sitemap:\s*(\S+)/gim)].map((match) => match[1]).slice(0, 10);
+}
+
 export function parseRobotsDirectives(body: string) {
   const directives: RobotsDirective[] = []; let current: RobotsDirective = { userAgents: [], allow: [], disallow: [] }; let hasRules = false;
   const flush = () => { if (current.userAgents.length) directives.push(current); current = { userAgents: [], allow: [], disallow: [] }; hasRules = false; };
@@ -147,7 +151,7 @@ function evidenceForPage(requestedUrl: string, result: FetchResult, started: num
 export async function collectScan(scan: ScanEvidence, fetcher: Fetcher = fetchPublic, activeLimits: ScanLimits = limits) {
   const homeStarted = Date.now(); const home = await fetcher(new URL(scan.normalizedUrl), activeLimits.htmlBytes); const homeUrl = new URL(home.finalUrl);
   const homeEvidence = evidenceForPage(scan.normalizedUrl, home, homeStarted); scan.pages.push(homeEvidence);
-  try { const robots = await fetcher(new URL("/robots.txt", homeUrl.origin), activeLimits.textBytes); scan.robots = { status: robots.status, discoveredSitemaps: [...robots.body.matchAll(/^sitemap:\s*(\S+)/gim)].map((match) => match[1]).slice(0, 10), directives: parseRobotsDirectives(robots.body) }; } catch (error) { scan.robots = { discoveredSitemaps: [], directives: [], error: error instanceof Error ? error.message : "robots fetch failed" }; }
+  try { const robots = await fetcher(new URL("/robots.txt", homeUrl.origin), activeLimits.textBytes); scan.robots = { status: robots.status, discoveredSitemaps: parseRobotsSitemaps(robots.body), directives: parseRobotsDirectives(robots.body) }; } catch (error) { scan.robots = { discoveredSitemaps: [], directives: [], error: error instanceof Error ? error.message : "robots fetch failed" }; }
   const declaredSitemap = scan.robots?.discoveredSitemaps.find((value) => { try { return new URL(value).origin === homeUrl.origin; } catch { return false; } }); const sitemapUrl = new URL(declaredSitemap ?? "/sitemap.xml", homeUrl.origin);
   try { const sitemap = await fetcher(sitemapUrl, activeLimits.sitemapBytes); scan.sitemap = { url: sitemap.finalUrl, status: sitemap.status, ...sitemapDocumentInfo(sitemap.body, homeUrl.origin, activeLimits.sitemapUrls) }; } catch (error) { scan.sitemap = { url: sitemapUrl.toString(), selectedUrls: [], parseable: false, urlCount: 0, invalidUrlCount: 0, error: error instanceof Error ? error.message : "sitemap fetch failed" }; }
   const candidates = [...new Set([...(scan.sitemap?.selectedUrls ?? []), ...homeEvidence.internalLinks])].filter((url) => url !== home.finalUrl).slice(0, Math.max(0, activeLimits.pages - 1));
