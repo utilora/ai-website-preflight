@@ -22,8 +22,8 @@ export function indexabilityRules(scan: ScanEvidence): Finding[] {
   for (const page of scan.pages) {
     if (page.error || !page.status || page.status >= 400) continue;
     const url = page.finalUrl ?? page.requestedUrl;
-    if (page.facts?.noindexMeta) findings.push(finding("indexability.meta-noindex", "high", "Page has a noindex meta directive", "A robots meta tag explicitly contains noindex.", "Observed `<meta name=\"robots\" content=\"noindex\">` directive.", url));
-    if (/\bnoindex\b/i.test(page.headers?.["x-robots-tag"] ?? "")) findings.push(finding("indexability.header-noindex", "high", "Page has an X-Robots-Tag noindex directive", "The HTTP response explicitly contains noindex.", `X-Robots-Tag: ${page.headers?.["x-robots-tag"]}`, url));
+    if (page.facts?.noindexMeta) findings.push(finding("indexability.meta-noindex", "critical", "Page has a noindex meta directive", "A robots meta tag explicitly contains noindex.", "Observed `<meta name=\"robots\" content=\"noindex\">` directive.", url));
+    if (/\bnoindex\b/i.test(page.headers?.["x-robots-tag"] ?? "")) findings.push(finding("indexability.header-noindex", "critical", "Page has an X-Robots-Tag noindex directive", "The HTTP response explicitly contains noindex.", `X-Robots-Tag: ${page.headers?.["x-robots-tag"]}`, url));
   }
   const statuses = Object.fromEntries(aiBots.map((bot) => [bot, statusForBot(robotDirectives, bot)]));
   findings.push(finding("robots.ai-crawler-access", "info", "AI crawler access declarations", "robots.txt declarations for common AI crawlers are reported as facts only.", Object.entries(statuses).map(([bot, status]) => `${bot}: ${status}`).join("; "), homeUrl, { statuses }));

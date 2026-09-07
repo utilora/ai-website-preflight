@@ -8,6 +8,7 @@ import { dirname } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { analyzeHtml } from "./html-evidence";
 import { runRules, type Finding, type PageFacts } from "./rules";
+import { calculateScore, groupFindings, type ResultGroups, type ScoreBreakdown } from "./scoring";
 
 export type ScanLimits = { pages: number; redirects: number; timeoutMs: number; htmlBytes: number; textBytes: number; sitemapBytes: number; sitemapUrls: number };
 export const limits: ScanLimits = { pages: 8, redirects: 4, timeoutMs: 10_000, htmlBytes: 1_000_000, textBytes: 256_000, sitemapBytes: 512_000, sitemapUrls: 50 };
@@ -15,7 +16,7 @@ export type ScanStatus = "queued" | "running" | "completed" | "failed";
 export type PageEvidence = { requestedUrl: string; finalUrl?: string; status?: number; redirects: string[]; headers?: Record<string, string>; contentType?: string; title?: string; internalLinks: string[]; facts?: PageFacts; durationMs: number; error?: string };
 export type RobotsDirective = { userAgents: string[]; allow: string[]; disallow: string[] };
 export type ResourceEvidence = { kind: "favicon" | "og-image"; url: string; status?: number; error?: string };
-export type ScanEvidence = { id: string; submittedUrl: string; normalizedUrl: string; status: ScanStatus; createdAt: string; startedAt?: string; completedAt?: string; errorSummary?: string; pages: PageEvidence[]; robots?: { status?: number; discoveredSitemaps: string[]; directives: RobotsDirective[]; error?: string }; sitemap?: { url?: string; status?: number; selectedUrls: string[]; parseable: boolean; urlCount: number; invalidUrlCount: number; error?: string }; resources?: ResourceEvidence[]; missingPage?: { url: string; status?: number; error?: string }; findings?: Finding[]; warnings: string[] };
+export type ScanEvidence = { id: string; submittedUrl: string; normalizedUrl: string; status: ScanStatus; createdAt: string; startedAt?: string; completedAt?: string; errorSummary?: string; pages: PageEvidence[]; robots?: { status?: number; discoveredSitemaps: string[]; directives: RobotsDirective[]; error?: string }; sitemap?: { url?: string; status?: number; selectedUrls: string[]; parseable: boolean; urlCount: number; invalidUrlCount: number; error?: string }; resources?: ResourceEvidence[]; missingPage?: { url: string; status?: number; error?: string }; findings?: Finding[]; score?: ScoreBreakdown; resultGroups?: ResultGroups; warnings: string[] };
 export type ResolvedAddress = { address: string; family: number };
 export type Resolver = (hostname: string) => Promise<ResolvedAddress[]>;
 export type FetchResult = { status: number; headers: Record<string, string>; body: string; finalUrl: string; redirects: string[] };
@@ -111,7 +112,16 @@ export async function collectScan(scan: ScanEvidence, fetcher: Fetcher = fetchPu
 }
 
 const dbPath = process.env.DATABASE_PATH ?? "./data/preflight.db"; mkdirSync(dirname(dbPath), { recursive: true }); const db = new DatabaseSync(dbPath); db.exec("CREATE TABLE IF NOT EXISTS scans (id TEXT PRIMARY KEY, payload TEXT NOT NULL)");
-function save(scan: ScanEvidence) { db.prepare("INSERT OR REPLACE INTO scans (id, payload) VALUES (?, ?)").run(scan.id, JSON.stringify(scan)); }
+export function saveScan(scan: ScanEvidence) { db.prepare("INSERT OR REPLACE INTO scans (id, payload) VALUES (?, ?)").run(scan.id, JSON.stringify(scan)); }
 export function getScan(id: string): ScanEvidence | null { const row = db.prepare("SELECT payload FROM scans WHERE id = ?").get(id) as { payload?: string } | undefined; return row?.payload ? JSON.parse(row.payload) as ScanEvidence : null; }
-export async function runScan(id: string) { const scan = getScan(id); if (!scan) return; scan.status = "running"; scan.startedAt = new Date().toISOString(); save(scan); try { await collectScan(scan); scan.status = "completed"; } catch (error) { scan.status = "failed"; scan.errorSummary = error instanceof Error ? error.message : "Scan failed"; scan.findings = runRules(scan); } scan.completedAt = new Date().toISOString(); save(scan); }
-export async function createScan(submittedUrl: string) { const normalized = await normalizePublicUrl(submittedUrl); const scan: ScanEvidence = { id: randomUUID(), submittedUrl, normalizedUrl: normalized.toString(), status: "queued", createdAt: new Date().toISOString(), pages: [], warnings: [] }; save(scan); void runScan(scan.id); return scan; }
+export function createQueuedScan(submittedUrl: string, normalizedUrl: string, id: string = randomUUID(), createdAt = new Date().toISOString()): ScanEvidence {
+  return { id, submittedUrl, normalizedUrl, status: "queued", createdAt, pages: [], warnings: [] };
+}
+export function completeScan(scan: ScanEvidence, completedAt = new Date().toISOString()) {
+  scan.status = "completed"; scan.completedAt = completedAt; scan.score = calculateScore(scan.findings ?? []); scan.resultGroups = groupFindings(scan.findings ?? []); delete scan.errorSummary; return scan;
+}
+export function failScan(scan: ScanEvidence, error: unknown, completedAt = new Date().toISOString()) {
+  scan.status = "failed"; scan.completedAt = completedAt; scan.errorSummary = error instanceof Error ? error.message : "Scan failed"; scan.findings = runRules(scan); delete scan.score; delete scan.resultGroups; return scan;
+}
+export async function runScan(id: string) { const scan = getScan(id); if (!scan) return; scan.status = "running"; scan.startedAt = new Date().toISOString(); saveScan(scan); try { await collectScan(scan); completeScan(scan); } catch (error) { failScan(scan, error); } saveScan(scan); }
+export async function createScan(submittedUrl: string) { const normalized = await normalizePublicUrl(submittedUrl); const scan = createQueuedScan(submittedUrl, normalized.toString()); saveScan(scan); void runScan(scan.id); return scan; }

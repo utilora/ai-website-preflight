@@ -1,12 +1,14 @@
 # AI Website Preflight
 
-AI Website Preflight is a pre-launch verification product for people who build websites with Codex, Cursor, Lovable, Replit, Bolt, and related AI tools. It will help users identify launch-blocking issues and prepare an evidence-based Codex Fix Pack.
+AI Website Preflight is a pre-launch verification product for people who build websites with Codex, Cursor, Lovable, Replit, Bolt, and related AI tools. It helps users turn reproducible website checks into a clear launch-readiness report.
 
 ## Current Development Stage
 
-Phase 03 — Detection Rules
+Phase 04 — Ready Score and Results
 
-This repository now provides constrained public URL scans plus deterministic, evidence-based Phase 03 findings for indexability, metadata, links, accessibility basics, security observations, and structured data. It does not calculate a score, readiness label, or recommend fixes.
+This repository provides constrained public URL scans, deterministic Phase 03 findings, and a backend-calculated Ready Score with READY TO LAUNCH, ALMOST READY, or NOT READY status. The private result page groups evidence into Must Fix, Warnings, and Info and can start a new scan without overwriting the old report.
+
+Fix with Codex, PRELAUNCH_FIX.md, AI-generated repair guidance, automatic code changes, authentication, payments, and dashboards are not implemented.
 
 ## Technology Stack
 
@@ -22,12 +24,22 @@ This repository now provides constrained public URL scans plus deterministic, ev
 3. Start the development server: `npm run dev`
 4. Open `http://localhost:3000`.
 
+## Ready Score v1
+
+Scores start at 100 and use fixed deductions: critical 15, high 8, medium 4, low 1, and info 0. Deductions are aggregated by `ruleId`: site-wide rules count once, while page-level rules are capped at one critical, two high, three medium, or three low occurrences. The report still preserves the true number of affected URLs.
+
+- READY TO LAUNCH: no critical findings and score 90–100
+- ALMOST READY: no critical findings and score 75–89
+- NOT READY: any critical finding or score below 75
+
+Ready Score summarizes automated checks from the sampled pages; it is not a complete security, compliance, or website-quality assessment.
+
 ## Environment Variables
 
 | Variable | Purpose | Default |
 | --- | --- | --- |
 | `NEXT_PUBLIC_APP_URL` | Public application URL | `http://localhost:3000` |
-| `DATABASE_PATH` | Reserved SQLite database path | `./data/preflight.db` |
+| `DATABASE_PATH` | SQLite scan database path | `./data/preflight.db` |
 | `LOG_LEVEL` | Minimum structured log level | `info` |
 
 ## Validation
@@ -35,6 +47,7 @@ This repository now provides constrained public URL scans plus deterministic, ev
 Run the following before merging or deploying:
 
 ```text
+npm ci
 npm run lint
 npm run typecheck
 npm run test
@@ -52,7 +65,7 @@ The Phase 02 architecture intentionally avoids external queues, browser workers,
 
 ## Scope Boundary
 
-Do not add scoring, readiness labels, Fix with Codex, authentication, payments, subscriptions, AI APIs, dashboards, teams, browser extensions, or automatic repository modification without explicit approval. See [AGENTS.md](AGENTS.md) and the converted requirements under `docs/`.
+Phase 04 includes deterministic scoring, readiness labels, result grouping, report states, and rescan. Do not add Fix with Codex, Fix Packs, authentication, payments, subscriptions, AI APIs, dashboards, teams, browser extensions, or automatic repository modification without explicit approval. See [AGENTS.md](AGENTS.md) and the converted requirements under `docs/`.
 
 ## Known Phase 02 Limitation
 
