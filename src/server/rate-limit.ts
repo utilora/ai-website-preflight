@@ -98,15 +98,26 @@ export function resetScanRateLimiters(options: { ip?: SlidingWindowLimiter; host
   hostScanLimiter = options.host ?? createDefaultHostLimiter(options.now);
 }
 
-export function clientIpFromHeaders(headers: Headers): string {
-  const forwarded = headers.get("x-forwarded-for");
-  if (forwarded) {
-    const first = forwarded.split(",")[0]?.trim();
-    if (first) return first.slice(0, 128);
-  }
-  const realIp = headers.get("x-real-ip")?.trim();
-  return (realIp || "unknown").slice(0, 128);
+export function trustProxyHeadersEnabled(value = process.env.TRUST_PROXY_HEADERS) {
+  return value === "true";
 }
+
+export const UNTRUSTED_CLIENT_IP = "direct";
+
+function lastForwardedHop(value: string | null): string | null {
+  if (!value) return null;
+  const hops = value.split(",").map((part) => part.trim()).filter(Boolean);
+  const hop = hops.at(-1);
+  return hop ? hop.slice(0, 128) : null;
+}
+
+export function clientIpFromHeaders(headers: Headers, options: { trustProxy?: boolean } = {}): string {
+  const trustProxy = options.trustProxy ?? trustProxyHeadersEnabled();
+  if (!trustProxy) return UNTRUSTED_CLIENT_IP;
+  return lastForwardedHop(headers.get("x-forwarded-for")) ?? lastForwardedHop(headers.get("x-real-ip")) ?? UNTRUSTED_CLIENT_IP;
+}
+
+
 
 export function hostKeyFromUrl(raw: string): string | null {
   try {

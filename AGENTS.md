@@ -30,6 +30,7 @@ This is a pre-launch verification product, not a generic SEO dashboard.
 - Do not claim complete security auditing or legal compliance certification.
 - Detection, scoring, and Fix Pack templates must have automated tests.
 - Scan execution uses a process-local queue with a conservative active-scan cap. Process restart does not recover queued or running scans.
+- Do not trust client-supplied `X-Forwarded-For` or `X-Real-IP` unless `TRUST_PROXY_HEADERS=true` and the reverse proxy overwrites those headers.
 
 ## Repository Boundary
 

@@ -7,3 +7,4 @@
 - Rate-limit `POST /api/scans` in process memory by client IP and target hostname, with TTL and a maximum key count.
 - Decode deterministic embedded IPv4 from IPv6 (NAT64, IPv4-compatible, 6to4, Teredo) and reuse the existing IPv4 BlockList instead of rewriting fetch.
 - Persist and return only allowlisted response headers required for detection evidence.
+- IP rate limits do not trust `X-Forwarded-For` or `X-Real-IP` unless `TRUST_PROXY_HEADERS=true`. A reverse proxy must overwrite those headers; untrusted mode uses a single `direct` identity so forged headers cannot mint new limiter keys. Trusted mode uses the last forwarded hop.

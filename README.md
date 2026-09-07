@@ -53,6 +53,7 @@ The Fix Pack is deterministic and does not modify the user's repository. Users s
 | `SCAN_RATE_LIMIT_IP_WINDOW_MS` | IP window length | `600000` |
 | `SCAN_RATE_LIMIT_HOST_WINDOW_MS` | Host window length | `600000` |
 | `SCAN_RATE_LIMIT_MAX_KEYS` | Maximum in-memory rate-limit keys | `2048` |
+| `TRUST_PROXY_HEADERS` | Trust reverse-proxy IP headers | `false` |
 
 ## Validation
 
@@ -71,7 +72,24 @@ npm run build
 1. Set `NEXT_PUBLIC_APP_URL`, `DATABASE_PATH`, and `LOG_LEVEL` in the deployment environment.
 2. Run `npm ci` followed by `npm run build`.
 3. Start the single application process with `npm run start`.
-4. Configure a reverse proxy and health check against `/api/health`.
+4. Put the app behind Nginx or Caddy. The proxy must **overwrite** `X-Forwarded-For` and `X-Real-IP` with the connecting client address, not append or pass through the original client headers. Then set `TRUST_PROXY_HEADERS=true`. Leave that flag unset if the Node process is reachable directly; untrusted forwarding headers are ignored and IP rate limits share one `direct` identity.
+5. Configure a health check against `/api/health`.
+
+Nginx:
+
+```nginx
+proxy_set_header X-Forwarded-For $remote_addr;
+proxy_set_header X-Real-IP $remote_addr;
+```
+
+Caddy:
+
+```caddy
+header_up X-Forwarded-For {remote_host}
+header_up X-Real-IP {remote_host}
+```
+
+Do not use `$proxy_add_x_forwarded_for`. That preserves a client-supplied chain and lets callers mint new limiter keys.
 
 The Phase 05.5 architecture intentionally avoids external queues, browser workers, and additional services so it remains suitable for a roughly 1 GB RAM server.
 
