@@ -16,3 +16,11 @@
 - Rate-limit tool runs separately from full scans, still using `clientIpFromHeaders` and `TRUST_PROXY_HEADERS`.
 - Do not persist tool results as public URLs. Broken Link Checker stays internal-only, max 20 links, concurrency 2, no recursion.
 - AI crawler names stay on the Phase 03 registry: GPTBot, ClaudeBot, Google-Extended, PerplexityBot.
+
+## Phase 07 — Production deployment
+
+- One Node process behind Nginx or Caddy. Listen on `127.0.0.1:3000` only.
+- GitHub Actions runs CI and must not SSH, restart, or migrate production.
+- SQLite lives outside the git tree. Daily file backups keep 14 days. Cleanup removes completed scans older than 30 days and keeps queued, running, and failed rows.
+- `TRUST_PROXY_HEADERS=true` only after the proxy overwrites forwarding headers.
+- Do not add a strict Content-Security-Policy in this phase.

@@ -1,0 +1,12 @@
+[Unit]
+Description=AI Website Preflight 30-day scan cleanup
+After=network.target
+
+[Service]
+Type=oneshot
+User=preflight
+Group=preflight
+WorkingDirectory=/var/www/ai-website-preflight/app
+EnvironmentFile=/etc/ai-website-preflight.env
+Environment=PATH=/usr/local/bin:/usr/bin
+ExecStart=/usr/bin/npm run cleanup-old-scans

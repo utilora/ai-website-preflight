@@ -5,6 +5,8 @@ coverage/
 *.log
 .env
 .env.local
+.env.production
 data/*.db
+data/backups/
 
 *.tsbuildinfo

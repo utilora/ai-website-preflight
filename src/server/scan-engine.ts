@@ -1,11 +1,11 @@
 import { randomUUID } from "node:crypto";
 import { lookup } from "node:dns/promises";
-import { mkdirSync } from "node:fs";
+import { mkdirSync, existsSync, unlinkSync } from "node:fs";
 import http from "node:http";
 import https from "node:https";
 import { BlockList, isIP } from "node:net";
 import { dirname } from "node:path";
-import { DatabaseSync } from "node:sqlite";
+import { DatabaseSync, backup as sqliteBackup } from "node:sqlite";
 import { sanitizeResponseHeaders } from "./headers";
 import { analyzeHtml } from "./html-evidence";
 import { runRules, type Finding, type PageFacts } from "./rules";
@@ -247,4 +247,29 @@ export async function createScan(submittedUrl: string) {
   saveScan(scan);
   enqueueScan(scan.id);
   return scan;
+}
+
+export function cleanupOldScans(options: { maxAgeMs?: number; now?: number } = {}) {
+  const maxAgeMs = options.maxAgeMs ?? 30 * 24 * 60 * 60 * 1000;
+  const now = options.now ?? Date.now();
+  const cutoff = now - maxAgeMs;
+  const rows = db.prepare("SELECT id, payload FROM scans").all() as { id: string; payload: string }[];
+  let deleted = 0;
+  for (const row of rows) {
+    const scan = JSON.parse(row.payload) as ScanEvidence;
+    if (scan.status === "queued" || scan.status === "running" || scan.status === "failed") continue;
+    const created = Date.parse(scan.createdAt);
+    if (!Number.isFinite(created) || created > cutoff) continue;
+    db.prepare("DELETE FROM scans WHERE id = ?").run(row.id);
+    deleted += 1;
+  }
+  const remaining = (db.prepare("SELECT COUNT(*) AS n FROM scans").get() as { n: number }).n;
+  return { deleted, remaining };
+}
+
+export async function backupScanDatabase(destination: string) {
+  mkdirSync(dirname(destination), { recursive: true });
+  if (existsSync(destination)) unlinkSync(destination);
+  await sqliteBackup(db, destination);
+  return destination;
 }

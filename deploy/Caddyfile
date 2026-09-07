@@ -1,0 +1,16 @@
+# Alternative to Nginx. Use one reverse proxy, not both.
+# Replace YOUR_DOMAIN. Caddy obtains and renews Let's Encrypt certificates.
+# header_up overwrites forwarding headers; do not pass a client-supplied chain.
+
+YOUR_DOMAIN {
+	encode gzip
+	header Strict-Transport-Security "max-age=31536000; includeSubDomains"
+	header X-Content-Type-Options nosniff
+	header Referrer-Policy strict-origin-when-cross-origin
+	reverse_proxy 127.0.0.1:3000 {
+		header_up Host {host}
+		header_up X-Real-IP {remote_host}
+		header_up X-Forwarded-For {remote_host}
+		header_up X-Forwarded-Proto {scheme}
+	}
+}

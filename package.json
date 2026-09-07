@@ -2,13 +2,18 @@
   "name": "ai-website-preflight",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=22.16.0"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
+    "start": "next start --hostname 127.0.0.1 --port 3000",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test tests/*.test.ts"
+    "test": "tsx --test tests/*.test.ts",
+    "cleanup-old-scans": "tsx scripts/cleanup-old-scans.ts",
+    "backup-scans": "tsx scripts/backup-scans.ts"
   },
   "dependencies": {
     "next": "15.5.25",

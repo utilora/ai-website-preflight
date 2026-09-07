@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-export function SiteHeader({ phase = "06" }: { phase?: string }) {
+export function SiteHeader({ phase = "07" }: { phase?: string }) {
   return (
     <header className="flex flex-wrap items-center justify-between gap-3" aria-label="Site header">
       <Link href="/" className="text-sm font-semibold tracking-[0.18em] text-cyan-300">AI WEBSITE PREFLIGHT</Link>

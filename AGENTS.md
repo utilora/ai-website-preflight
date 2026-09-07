@@ -31,11 +31,12 @@ This is a pre-launch verification product, not a generic SEO dashboard.
 - Detection, scoring, and Fix Pack templates must have automated tests.
 - Scan execution uses a process-local queue with a conservative active-scan cap. Process restart does not recover queued or running scans.
 - Do not trust client-supplied `X-Forwarded-For` or `X-Real-IP` unless `TRUST_PROXY_HEADERS=true` and the reverse proxy overwrites those headers.
+- Production listens on `127.0.0.1:3000` behind Nginx/Caddy. GitHub Actions is CI only; do not add CD.
 
 ## Repository Boundary
 
-This repository is the independent AI Website Preflight project. Keep all changes within its approved Phase 06 scope.
+This repository is the independent AI Website Preflight project. Keep all changes within its approved Phase 07 scope.
 
 ## Current Scope
 
-Phase 06 only: seven indexable free-tool pages plus a /tools hub on top of approved Preflight, scoring, Fix Pack, and launch-hardening. Reuse existing safe fetch, SSRF, rate-limit identity, and detection parsers. Do not call an AI API, inspect or modify user repositories, open pull requests, deploy code, add authentication or payment, create dashboards, or start Phase 07 without explicit approval.
+Phase 07 only: production deployment kit, CI, SQLite backup/cleanup, and operator documentation for a single 1 GB VPS. Do not call an AI API, inspect or modify user repositories, open pull requests automatically, add authentication or payment, create dashboards, add SEO tools, or start Phase 08 without explicit approval.
